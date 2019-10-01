@@ -19,6 +19,7 @@ import org.apache.hadoop.mapreduce.*;
 
 import javax.xml.parsers.*;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.validation.Schema;
 
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
@@ -158,6 +159,7 @@ public class HighwayContainsTheMostNodes {
 		InterruptedException {
 		try {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
 		DocumentBuilder builder = factory.newDocumentBuilder();
 		InputSource is = new InputSource(new StringReader(value.toString()));
 		Document document = builder.parse(is);
@@ -166,17 +168,25 @@ public class HighwayContainsTheMostNodes {
 		Element root = document.getDocumentElement();
 		NodeList nodeList = root.getElementsByTagName("way");
 
-
+		Boolean isWriteAble = false;
 			for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 				Node node = nodeList.item(i);
 				if(node.hasChildNodes()){
 					String id = node.getAttributes().getNamedItem("id").getTextContent();
-					for(int j=0, jlen = node.getChildNodes().getLength(); j < jlen; j++){
-						System.out.println(node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent());
+					for(int j=0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
+							if (node.getChildNodes().item(j).getNodeName().equals("tag")) {
+									if (node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
+										isWriteAble = true;
+									}
+									if (isWriteAble) {
+										context.write(new Text(id), new IntWritable(node.getChildNodes().getLength()));
+										isWriteAble = false;
+									}
+								}
+							}
+						}
 					}
 
-				}
-			}
 
 		} catch (SAXException exception) {
 
@@ -185,6 +195,7 @@ public class HighwayContainsTheMostNodes {
 		}
 	}
 	}
+
 
 
 	public static class IntSumReducer
@@ -216,7 +227,6 @@ public class HighwayContainsTheMostNodes {
 		job.setInputFormatClass(StartEndFileInputFormat.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(IntWritable.class);
-
 		FileInputFormat.addInputPath(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
