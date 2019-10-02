@@ -7,10 +7,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -25,7 +23,7 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 import org.xml.sax.InputSource;
 
-public class HighwayContainsTheMostNodes {
+public class AvgNumberNodesBuildingHighway {
 
 	public static class StartEndFileInputFormat extends FileInputFormat < LongWritable, Text > {
 
@@ -151,67 +149,62 @@ public class HighwayContainsTheMostNodes {
 	public static class TokenizerMapper
 			extends Mapper < Object, Text, Text, IntWritable > {
 
-		private Text word = new Text();
-		int max = Integer.MIN_VALUE;
-		int count = 0;
-
-	public void map(Object key, Text value, Context context) throws IOException,
-		InterruptedException {
-		try {
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		InputSource is = new InputSource(new StringReader(value.toString()));
-
-		Document document = builder.parse(is);
+		private Text word = new Text("average number of nodes in way: ");
 
 
-		document.getDocumentElement().normalize();
-		Element root = document.getDocumentElement();
-		NodeList nodeList = root.getElementsByTagName("way");
+		public void map(Object key, Text value, Context context) throws IOException,
+				InterruptedException {
+			try {
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-		Boolean isWriteAble = false;
-			for (int i = 0, len = nodeList.getLength(); i < len; i++) {
-				Node node = nodeList.item(i);
-				if(node.hasChildNodes()){
-					String id = node.getAttributes().getNamedItem("id").getTextContent();
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				InputSource is = new InputSource(new StringReader(value.toString()));
+				Document document = builder.parse(is);
 
-					for(int j=0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
-							if (node.getChildNodes().item(j).getNodeName().equals("tag")) {
-									if (node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
-										isWriteAble = true;
-									}
-									if (isWriteAble) {
-										context.write(new Text(id), new IntWritable(node.getChildNodes().getLength()));
-										isWriteAble = false;
-									}
-								}
+				document.getDocumentElement().normalize();
+				Element root = document.getDocumentElement();
+				NodeList nodeList = root.getElementsByTagName("way");
+
+				int counter = 0;
+				for (int i = 0, len = nodeList.getLength(); i < len; i++) {
+					Node node = nodeList.item(i);
+					if(node.hasChildNodes()){
+						for(int j=0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
+							if (node.getChildNodes().item(j).getNodeName().equals("nd")) {
+								counter++;
 							}
 						}
+						context.write(word, new IntWritable(counter));
+						counter = 0;
 					}
+				}
 
 
-		} catch (SAXException exception) {
 
-		} catch (ParserConfigurationException exception) {
+			} catch (SAXException exception) {
 
+			} catch (ParserConfigurationException exception) {
+
+			}
 		}
-	}
 	}
 
 
 
 	public static class IntSumReducer
-			extends Reducer < Text, IntWritable, Text, IntWritable > {
+			extends Reducer < Text, IntWritable, Text, DoubleWritable> {
 		private IntWritable result = new IntWritable();
 
 		public void reduce(Text key, Iterable < IntWritable > values, Context context) throws IOException, InterruptedException {
-			int sum = 0;
-			Text n = new Text();
-			while(values.iterator().hasNext()){
-				sum = values.iterator().next().get();
-				n = key;
+			Double sum = 0.0;
+			int count = 0;
+			for(IntWritable val : values){
+				sum+= val.get();
+				count++;
 			}
-			context.write(n, new IntWritable(sum));
+			System.out.println(sum + " " + count);
+			sum = sum/count;
+			context.write(key, new DoubleWritable(sum.shortValue()));
 
 		}
 	}
