@@ -112,8 +112,6 @@ public class AvgNumberNodesBuildingHighway {
 			}
 		}
 
-
-
 		@Override
 		public LongWritable getCurrentKey() throws IOException,
 				InterruptedException {
@@ -125,8 +123,6 @@ public class AvgNumberNodesBuildingHighway {
 				InterruptedException {
 			return value;
 		}
-
-
 		@Override
 		public float getProgress() throws IOException,
 				InterruptedException {
@@ -136,8 +132,6 @@ public class AvgNumberNodesBuildingHighway {
 				return Math.min(1.0f, (pos - start) / (float)(end - start));
 			}
 		}
-
-
 		@Override
 		public void close() throws IOException {
 			if (fsin != null) {
@@ -148,19 +142,14 @@ public class AvgNumberNodesBuildingHighway {
 
 	public static class TokenizerMapper
 			extends Mapper < Object, Text, Text, IntWritable > {
-
 		private Text word = new Text("average number of nodes in way: ");
-
-
 		public void map(Object key, Text value, Context context) throws IOException,
 				InterruptedException {
 			try {
 				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
 				DocumentBuilder builder = factory.newDocumentBuilder();
 				InputSource is = new InputSource(new StringReader(value.toString()));
 				Document document = builder.parse(is);
-
 				document.getDocumentElement().normalize();
 				Element root = document.getDocumentElement();
 				NodeList nodeList = root.getElementsByTagName("way");
@@ -178,9 +167,6 @@ public class AvgNumberNodesBuildingHighway {
 						counter = 0;
 					}
 				}
-
-
-
 			} catch (SAXException exception) {
 
 			} catch (ParserConfigurationException exception) {
@@ -190,11 +176,8 @@ public class AvgNumberNodesBuildingHighway {
 	}
 
 
-
 	public static class IntSumReducer
 			extends Reducer < Text, IntWritable, Text, DoubleWritable> {
-		private IntWritable result = new IntWritable();
-
 		public void reduce(Text key, Iterable < IntWritable > values, Context context) throws IOException, InterruptedException {
 			Double sum = 0.0;
 			int count = 0;
@@ -202,10 +185,9 @@ public class AvgNumberNodesBuildingHighway {
 				sum+= val.get();
 				count++;
 			}
-			System.out.println(sum + " " + count);
 			sum = sum/count;
-			context.write(key, new DoubleWritable(sum.shortValue()));
-
+			double roundOff = Math.round(sum*100)/100D;
+			context.write(key, new DoubleWritable(roundOff));
 		}
 	}
 
