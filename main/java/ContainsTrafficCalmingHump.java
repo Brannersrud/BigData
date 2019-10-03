@@ -1,14 +1,10 @@
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -41,18 +37,42 @@ public class ContainsTrafficCalmingHump {
 					Element root = document.getDocumentElement();
 					NodeList nodeList = root.getElementsByTagName("way");
 
+					int counter = 0;
+					Boolean isAMatch = false;
+					Boolean isHighway = false;
+					String id="";
+					for (int i = 0, len = nodeList.getLength(); i < len; i++) {
+						Node node = nodeList.item(i);
+						if (node.hasChildNodes()) {
+							for (int j = 0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
+								if (node.getChildNodes().item(j).getNodeName().equals("tag") && node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
+									id = node.getAttributes().getNamedItem("id").getTextContent();
+									isHighway = true;
 
+								}
+								if (node.getChildNodes().item(j).getNodeName().equals("tag") && node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("traffic_calming") &&
+										node.getChildNodes().item(j).getAttributes().getNamedItem("v").getTextContent().equals("hump")) {
+										counter++;
+										isAMatch = true;
+								}
+							}
+							if (isAMatch && isHighway) {
+								context.write(new Text(id), new IntWritable(counter));
+							}
+							isAMatch = false;
+							isHighway = false;
+							counter = 0;
+						}
+					}
+		}
 
-
-					//implement
-				} catch (SAXException exception) {
+			catch (SAXException exception) {
 
 				} catch (ParserConfigurationException exception) {
 
 				}
 			}
 		}
-
 
 		public static class IntSumReducer
 				extends Reducer<Text, IntWritable, Text, IntWritable> {

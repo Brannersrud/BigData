@@ -216,7 +216,6 @@ public class HighwayContainsTheMostNodes {
 										isCountAble = true;
 									}
 							}
-
 					}
 					if (isWriteAble && isCountAble) {
 						context.write(new Text("tag is: "+ tag + " Way with id: "+id + " count nodes: "), new IntWritable(count));
