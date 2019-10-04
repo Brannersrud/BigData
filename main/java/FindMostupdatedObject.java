@@ -43,6 +43,7 @@ public class FindMostupdatedObject {
 				document.getDocumentElement().normalize();
 				Element root = document.getDocumentElement();
 				NodeList nodeList = root.getElementsByTagName("node");
+
 				for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 					Node node = nodeList.item(i);
 					if (node.getNodeType() == Node.ELEMENT_NODE) {

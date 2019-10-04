@@ -20,6 +20,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
 
 public class buildingLargestLatitudalExtent {
 
@@ -38,12 +44,54 @@ public class buildingLargestLatitudalExtent {
 				document.getDocumentElement().normalize();
 				Element root = document.getDocumentElement();
 				NodeList nodeList = root.getElementsByTagName("node");
+
+				String name ="";
+				int lat=0;
+				Boolean isBuilding = false;
+				HashMap<String, Integer> myhashmap = new HashMap<>();
 				for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 					Node node = nodeList.item(i);
 					if(node.hasChildNodes()){
+						for(int j = 0, jlen = node.getChildNodes().getLength(); j < jlen; j++){
+									if(node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("building")){
+										isBuilding = true;
+										lat = Integer.parseInt(node.getAttributes().getNamedItem("lat").getTextContent());
+									}else if(node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("name")){
+										name = node.getChildNodes().item(j).getAttributes().getNamedItem("v").getTextContent();
+									}
+
+
+
+						}
+						if(isBuilding){
+							myhashmap.put(name, lat);
+						}
+						isBuilding = true;
+
 					}
 
 				}
+				Comparator<Map.Entry<String, Integer>> valueComparator =
+						(e1, e2) -> e1.getKey().compareTo(e2.getKey());
+
+				Map<String, Integer> sorted = myhashmap
+						.entrySet()
+						.stream()
+						.sorted(valueComparator.reversed())
+						.collect(toMap(
+								Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e1, LinkedHashMap::new));
+
+				int mapcounter=0;
+				for (Map.Entry<String, Integer> vals : sorted.entrySet()) {
+					if (!(mapcounter > 20)){
+						mapcounter++;
+						context.write(new Text(vals.getKey()), new IntWritable(vals.getValue()));
+
+					}
+
+
+				}
+
 
 			} catch (SAXException exception) {
 				// ignore

@@ -18,6 +18,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
 
 public class ContainsTrafficCalmingHump {
 
@@ -41,9 +47,12 @@ public class ContainsTrafficCalmingHump {
 					Boolean isAMatch = false;
 					Boolean isHighway = false;
 					String id="";
+					HashMap<Integer, Integer> myvalmap = new HashMap<>();
+					//loop nodes
 					for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 						Node node = nodeList.item(i);
 						if (node.hasChildNodes()) {
+							//loop children
 							for (int j = 0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
 								if (node.getChildNodes().item(j).getNodeName().equals("tag") && node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
 									id = node.getAttributes().getNamedItem("id").getTextContent();
@@ -56,15 +65,35 @@ public class ContainsTrafficCalmingHump {
 										isAMatch = true;
 								}
 							}
+							//check if its an highway and its a tag with traffic_calming=hump among the children
 							if (isAMatch && isHighway) {
-								context.write(new Text(id), new IntWritable(counter));
+								myvalmap.put(Integer.parseInt(id), counter);
 							}
 							isAMatch = false;
 							isHighway = false;
 							counter = 0;
 						}
 					}
-		}
+					//sort
+					Map<Integer, Integer> sorted = myvalmap
+							.entrySet()
+							.stream()
+							.sorted(Collections.<Map.Entry<Integer, Integer>>reverseOrder(
+									Map.Entry.comparingByValue()))
+							.collect(toMap(
+									Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e2, LinkedHashMap::new));
+
+					//write the 15 first to context.
+					int mapiterator=0;
+					for (Map.Entry<Integer, Integer> vals : sorted.entrySet()) {
+						if(mapiterator <= 15){
+							context.write(new Text((String.valueOf(vals.getKey()))), new IntWritable(vals.getValue()));
+							mapiterator++;
+						}else{
+							continue;
+						}
+					}
+				}
 
 			catch (SAXException exception) {
 

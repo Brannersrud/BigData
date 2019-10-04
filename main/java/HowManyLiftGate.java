@@ -63,7 +63,7 @@ public class HowManyLiftGate {
 									}else {
 										isHighway = true;
 									}
-								}else if(waydef.equals("maxspeed") && wayVal.equals("30")) {
+								}else if(waydef.equals("barrier_lift") && wayVal.equals("gate")) {
 									tag2 = wayVal;
 									if(isHighway){
 										context.write(new Text(tag + " - " + waydef+ " - " + tag2 + " count: "), one);
@@ -71,11 +71,9 @@ public class HowManyLiftGate {
 									}else{
 										containsWord = true;
 									}
-
 								}
 							}
 						}
-
 						isHighway = false;
 						containsWord = false;
 					}
@@ -88,7 +86,6 @@ public class HowManyLiftGate {
 			}
 		}
 	}
-
 
 	public static class IntSumReducer
 			extends Reducer<Text, IntWritable, Text, IntWritable> {

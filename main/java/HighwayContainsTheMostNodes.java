@@ -3,27 +3,25 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.StringReader;
 
-import java.util.StringTokenizer;
+import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.*;
 
 
 import javax.xml.parsers.*;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.validation.Schema;
 
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 import org.xml.sax.InputSource;
+
+import static java.util.stream.Collectors.toMap;
 
 public class HighwayContainsTheMostNodes {
 
@@ -198,6 +196,7 @@ public class HighwayContainsTheMostNodes {
 		int count=0;
 		String tag = "";
 		String id ="";
+			HashMap<String, Integer> mymap = new HashMap<String, Integer>();
 			for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 				Node node = nodeList.item(i);
 				if(node.hasChildNodes()){
@@ -207,24 +206,48 @@ public class HighwayContainsTheMostNodes {
 							if (node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
 								id = node.getAttributes().getNamedItem("id").getTextContent();
 								isWriteAble = true;
-								tag = node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent();
 
 							}
 								}else if(node.getChildNodes().item(j).getNodeName().equals("nd")){
-									if(isWriteAble) {
-										count++;
-										isCountAble = true;
-									}
+											count += 1;
+											isCountAble = true;
+
+
 							}
 					}
 					if (isWriteAble && isCountAble) {
-						context.write(new Text("tag is: "+ tag + " Way with id: "+id + " count nodes: "), new IntWritable(count));
-						isWriteAble = false;
-						isCountAble = false;
-						count = 0;
+						mymap.put(id, count);
+
 					}
 
+					isCountAble = false;
+					isWriteAble = false;
+					count=0;
 				}
+
+			}
+
+			Comparator<Map.Entry<String, Integer>> valueComparator =
+					(e1, e2) -> e1.getValue().compareTo(e2.getValue());
+
+			Map<String, Integer> sorted = mymap
+					.entrySet()
+					.stream()
+					.sorted(valueComparator.reversed())
+					.collect(toMap(
+							 Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e1, LinkedHashMap::new));
+
+
+
+			int mapcounter=0;
+			for (Map.Entry<String, Integer> vals : sorted.entrySet()) {
+					if (!(mapcounter > 20)){
+						mapcounter++;
+						context.write(new Text(vals.getKey()), new IntWritable(vals.getValue()));
+
+					}
+
+
 			}
 
 
@@ -233,7 +256,7 @@ public class HighwayContainsTheMostNodes {
 		} catch (ParserConfigurationException exception) {
 
 		}
-	}
+		}
 	}
 
 
@@ -244,13 +267,11 @@ public class HighwayContainsTheMostNodes {
 
 		public void reduce(Text key, Iterable < IntWritable > values, Context context) throws IOException, InterruptedException {
 			int sum = 0;
-			Text n = new Text();
-			while(values.iterator().hasNext()){
-				sum = values.iterator().next().get();
-				n = key;
+			for(IntWritable val : values){
+				sum = val.get();
 			}
-			context.write(n, new IntWritable(sum));
-
+			result.set(sum);
+			context.write(key, result);
 		}
 	}
 
