@@ -58,8 +58,6 @@ public class buildingLargestLatitudalExtent {
 										name = node.getChildNodes().item(j).getAttributes().getNamedItem("v").getTextContent();
 
 									}
-
-
 						}
 
 						}
@@ -68,12 +66,9 @@ public class buildingLargestLatitudalExtent {
 						}
 						isBuilding = false;
 					}
-
-
 				}
 				Comparator<Map.Entry<String, Double>> valueComparator =
 						(e1, e2) -> e1.getKey().compareTo(e2.getKey());
-
 				Map<String, Double> sorted = myhashmap
 						.entrySet()
 						.stream()
@@ -81,18 +76,19 @@ public class buildingLargestLatitudalExtent {
 						.collect(toMap(
 								Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e1, LinkedHashMap::new));
 
+
 				int mapcounter=0;
 				String nameOfVal = "placeholder";
 				double longlat = 0;
 				double shortlat=Double.MAX_VALUE;
-				Map<String, Double> secondHashmap = new HashMap<String, Double>();
+				Map<String, Double> highestvaluesofeach = new HashMap<String, Double>();
 				for (Map.Entry<String, Double> vals : sorted.entrySet()) {
 					if(nameOfVal.equals("placeholder")){
 						nameOfVal = vals.getKey();
 					}
 					if(vals.getKey() != nameOfVal){
 						Double valueToWrite = longlat-shortlat;
-						secondHashmap.put(nameOfVal, valueToWrite);
+						highestvaluesofeach.put(nameOfVal, valueToWrite);
 						nameOfVal = vals.getKey();
 					}
 					if(nameOfVal == vals.getKey()){
@@ -104,9 +100,7 @@ public class buildingLargestLatitudalExtent {
 						}
 					}
 				}
-
-
-				Iterator<Map.Entry<String, Double>> it = secondHashmap.entrySet().iterator();
+				Iterator<Map.Entry<String, Double>> it = highestvaluesofeach.entrySet().iterator();
 				Double highest = 0.0;
 				String nameOfBuilding = "";
 
@@ -119,9 +113,7 @@ public class buildingLargestLatitudalExtent {
 					}
 				}
 				context.write(new Text(nameOfBuilding), new DoubleWritable(highest));
-
-
-
+				
 			} catch (SAXException exception) {
 				// ignore
 			} catch (ParserConfigurationException exception) {
@@ -142,7 +134,7 @@ public class buildingLargestLatitudalExtent {
 					keyvalue = key.toString();
 			}
 			result.set(sum);
-			context.write(new Text("the highest latitude extent: " + keyvalue), result);
+			context.write(new Text("the highest latitude extent id: " + keyvalue), result);
 
 		}
 	}
