@@ -76,8 +76,7 @@ public class buildingLargestLatitudalExtent {
 						.collect(toMap(
 								Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e1, LinkedHashMap::new));
 
-
-				int mapcounter=0;
+				int counter = 0;
 				String nameOfVal = "placeholder";
 				double longlat = 0;
 				double shortlat=Double.MAX_VALUE;
@@ -85,20 +84,23 @@ public class buildingLargestLatitudalExtent {
 				for (Map.Entry<String, Double> vals : sorted.entrySet()) {
 					if(nameOfVal.equals("placeholder")){
 						nameOfVal = vals.getKey();
-					}
-					if(vals.getKey() != nameOfVal){
-						Double valueToWrite = longlat-shortlat;
-						highestvaluesofeach.put(nameOfVal, valueToWrite);
-						nameOfVal = vals.getKey();
+
 					}
 					if(nameOfVal == vals.getKey()){
 						if(vals.getValue() > longlat){
 							longlat = vals.getValue();
+							nameOfVal = vals.getKey();
 						}
 						else if(vals.getValue() < shortlat){
 							shortlat = vals.getValue();
 						}
+						Double valueToWrite = longlat-shortlat;
+						highestvaluesofeach.put(nameOfVal, valueToWrite);
 					}
+					if(nameOfVal != vals.getKey()){
+						nameOfVal = vals.getKey();
+					}
+
 				}
 				Iterator<Map.Entry<String, Double>> it = highestvaluesofeach.entrySet().iterator();
 				Double highest = 0.0;
@@ -106,14 +108,16 @@ public class buildingLargestLatitudalExtent {
 
 				while(it.hasNext()){
 					Map.Entry<String, Double> pair = (Map.Entry<String, Double>) it.next();
-
-					if(pair.getValue() > highest){
+					if(highest < pair.getValue()) {
 						highest = pair.getValue();
 						nameOfBuilding = pair.getKey();
 					}
+
 				}
+
 				context.write(new Text(nameOfBuilding), new DoubleWritable(highest));
-				
+
+
 			} catch (SAXException exception) {
 				// ignore
 			} catch (ParserConfigurationException exception) {
@@ -134,7 +138,7 @@ public class buildingLargestLatitudalExtent {
 					keyvalue = key.toString();
 			}
 			result.set(sum);
-			context.write(new Text("the highest latitude extent id: " + keyvalue), result);
+			context.write(new Text("the highest latitude extent: " + keyvalue), result);
 
 		}
 	}

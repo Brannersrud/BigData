@@ -186,7 +186,6 @@ public class HighwayContainsTheMostNodes {
 
 		Document document = builder.parse(is);
 
-
 		document.getDocumentElement().normalize();
 		Element root = document.getDocumentElement();
 		NodeList nodeList = root.getElementsByTagName("way");
@@ -235,11 +234,11 @@ public class HighwayContainsTheMostNodes {
 					.stream()
 					.sorted(valueComparator.reversed())
 					.collect(toMap(
-							 Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e1, LinkedHashMap::new));
+							 Map.Entry::getKey, Map.Entry::getValue, (e1,e2) -> e2, LinkedHashMap::new));
 
 
 
-			int mapcounter=0;
+			int mapcounter=1;
 			for (Map.Entry<String, Integer> vals : sorted.entrySet()) {
 					if (!(mapcounter > 20)){
 						mapcounter++;
@@ -268,7 +267,7 @@ public class HighwayContainsTheMostNodes {
 		public void reduce(Text key, Iterable < IntWritable > values, Context context) throws IOException, InterruptedException {
 			int sum = 0;
 			for(IntWritable val : values){
-				sum = val.get();
+				sum += val.get();
 			}
 			result.set(sum);
 			context.write(key, result);

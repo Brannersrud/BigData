@@ -1,6 +1,7 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -28,14 +29,13 @@ public class LongestWay {
 
 
 
-	public static class TokenizerMapper extends Mapper< Object, Text, Text, DoubleWritable> {
+	public static class nodeMapper extends Mapper< Object, Text, Text, DoubleWritable> {
 		private Text word = new Text();
 		int max = Integer.MIN_VALUE;
 		private DistanceLongLat geocalculator = new DistanceLongLat();
 
 
-		public void map(Object key, Text value, Context context) throws IOException,
-				InterruptedException {
+		public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
 			try {
 
 				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -45,6 +45,7 @@ public class LongestWay {
 				document.getDocumentElement().normalize();
 				Element root = document.getDocumentElement();
 				NodeList nodeList = root.getElementsByTagName("node");
+				//find all the node-ids and their corresponding long lat vals
 
 				int counter = 0;
 				Double lowlat = 1000.0;
@@ -81,11 +82,10 @@ public class LongestWay {
 								}
 							}
 
+
 						}
-						lowlat = 1000.0;
-						highLat = 0.0;
-						lowlong = 1000.0;
-						highlong = 0.0;
+
+
 					}
 
 				}
@@ -104,10 +104,6 @@ public class LongestWay {
 
 				context.write(new Text("object with longest length" + nameOfBuilding + " length in meters: "), new DoubleWritable(highest));
 
-
-
-
-
 			} catch (SAXException exception) {
 				// ignore
 			} catch (ParserConfigurationException exception) {
@@ -116,6 +112,35 @@ public class LongestWay {
 		}
 
 	}
+/*
+	public static class wayMapper extends Mapper<Object, Text, Text, IntWritable>{
+
+		public void map(Object key, Text value, Context contex) throws IOException{
+
+			try {
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				InputSource is = new InputSource(new StringReader(value.toString()));
+				Document document = builder.parse(is);
+				document.getDocumentElement().normalize();
+				Element root = document.getDocumentElement();
+				NodeList nodeList = root.getElementsByTagName("node");
+				//find the id of nd nodes
+
+
+
+
+			}catch (ParserConfigurationException exception){
+				exception.printStackTrace();
+			}catch (SAXException exception){
+				exception.printStackTrace();
+			}
+
+		}
+
+	}
+
+*/
 
 	public static class IntSumReducer
 			extends Reducer< Text, DoubleWritable, Text, DoubleWritable > {
@@ -128,7 +153,6 @@ public class LongestWay {
 			}
 			result.set(sum);
 			context.write(key, result);
-
 		}
 	}
 
@@ -140,7 +164,7 @@ public class LongestWay {
 		conf.set("com.geitle.startend.endTag", "</osm>");
 		Job job = Job.getInstance(conf, "xml count");
 		job.setJarByClass(LongestWay.class);
-		job.setMapperClass(TokenizerMapper.class);
+		job.setMapperClass(nodeMapper.class);
 		job.setReducerClass(IntSumReducer.class);
 		job.setSortComparatorClass(LongWritable.DecreasingComparator.class);
 		job.setInputFormatClass(XMLmapper.StartEndFileInputFormat.class);

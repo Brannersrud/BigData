@@ -39,17 +39,34 @@ public class AvgNumberNodesBuildingHighway {
 				Element root = document.getDocumentElement();
 				NodeList nodeList = root.getElementsByTagName("way");
 
-				int counter = 0;
+				int count = 0;
+				boolean isWriteAble = false;
+				boolean isCountAble = false;
 				for (int i = 0, len = nodeList.getLength(); i < len; i++) {
 					Node node = nodeList.item(i);
 					if(node.hasChildNodes()){
 						for(int j=0, jlen = node.getChildNodes().getLength(); j < jlen; j++) {
-							if (node.getChildNodes().item(j).getNodeName().equals("nd")) {
-								counter++;
+							//count nd nodes
+							if(node.getChildNodes().item(j).getNodeName().equals("tag")){
+								if (node.getChildNodes().item(j).getAttributes().getNamedItem("k").getTextContent().equals("highway")) {
+									isWriteAble = true;
+
+								}
+							}else if(node.getChildNodes().item(j).getNodeName().equals("nd")){
+								count += 1;
+								isCountAble = true;
+
+
 							}
 						}
-						context.write(word, new IntWritable(counter));
-						counter = 0;
+						if (isWriteAble && isCountAble) {
+							context.write(word, new IntWritable(count));
+
+						}
+
+						isCountAble = false;
+						isWriteAble = false;
+						count=0;
 					}
 				}
 			} catch (SAXException exception) {
